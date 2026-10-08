@@ -1,0 +1,27 @@
+# Commercial game content / personal state must never be committed.
+*.port
+*.apk
+*.nsp
+*.xci
+*.nro
+*.nso
+*.exe
+*.zip
+*.7z
+*.win
+*.droid
+**/libyoyo.so
+assets/
+viviette/assets/
+viviette/saves/*
+!viviette/saves/.gitkeep
+*.dat
+*.log
+log*.txt
+*.prev
+*.bak
+*backup*
+*before_*
+yoyo_candidates/
+__pycache__/
+*.pyc
