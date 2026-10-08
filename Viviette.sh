@@ -33,6 +33,14 @@ export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
 export ESUDO
 export controlfolder
 
+# SpruceOS can reference an undefined PCM named Playback. Override the
+# ALSA configuration for this game only, and only on the matching sound card.
+if [ -r /proc/asound/cards ] && grep -q '\[audiocodec' /proc/asound/cards \
+    && [ -f "$GAMEDIR/asound-viviette.conf" ]; then
+  export ALSA_CONFIG_PATH="$GAMEDIR/asound-viviette.conf"
+  echo "[Viviette] ALSA output: port-local audiocodec playback"
+fi
+
 # Assign gptokeyb and load the game
 $GPTOKEYB "gmloadernext.aarch64" -c "viviette.gptk" &
 pm_platform_helper "$GAMEDIR/gmloadernext.aarch64" >/dev/null

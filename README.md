@@ -1,7 +1,7 @@
 # Viviette — PortMaster / TrimUI Smart Pro S
 
 Port scaffold for **Viviette** on **TrimUI Smart Pro S (TSPS), SpruceOS, AArch64**.
-Verified on that device: gameplay, keyboard-mapped controls, and readable English dialogue after the Mali shader precision fix. Other handhelds are not verified.
+Verified on that device: gameplay, keyboard-mapped controls, readable English dialogue after the Mali shader precision fix, and audible playback after the port-local ALSA fix. Other handhelds are not verified.
 
 **This repository does not contain the game, game assets, `game.port`, `libyoyo.so`, personal saves, or commercial archives.** Purchase the game and supply your own legally obtained files. Owning the game does not make an incompatible build compatible with this runner.
 
@@ -49,6 +49,7 @@ bd8bb7584b544e8a9830389f9b13a6595fd494966e39a06059b24f00161f7444
        ├── gmloader.json
        ├── gmloadernext.aarch64
        ├── viviette.gptk
+       ├── asound-viviette.conf       # port-local TSPS speaker configuration
        ├── lib/arm64-v8a/
        │   ├── libc++_shared.so
        │   ├── libcompiler_rt.so
@@ -86,13 +87,25 @@ The verified runner's default GLSL uses `precision mediump float;`. With a 4096�
 
 Expanding glyph sprite frames to 16×16 was an unsuccessful experiment: it increased character spacing. **That experiment is not included in this port.**
 
+## TSPS audio fix
+
+SpruceOS's default ALSA configuration can reference a PCM named `Playback` without defining it. Viviette then logs `Unknown PCM Playback` and runs silently, even with the speaker enabled in the mixer.
+
+The launcher now selects `viviette/asound-viviette.conf` through `ALSA_CONFIG_PATH` only when `/proc/asound/cards` contains the `audiocodec` card. This self-contained config defines `Playback` as a plug to that card's hardware playback device 0. The system ALSA files and mixer settings are not modified. Other sound-card names keep their existing configuration.
+
+During the device test, the game opened `/dev/snd/pcmC0D0p`; ALSA reported `RUNNING`, S16_LE stereo at 44100 Hz, with advancing hardware/application pointers. The `Unknown PCM Playback` error disappeared and the user confirmed audible sound. The bounded test was closed afterward and the Spruce menu was verified restored.
+
+This route targets the built-in speaker/headphone codec, not Bluetooth. Additional `Invalid CTL hw:0` enumeration warnings were observed with the minimal config, but playback worked; they are distinct from the original missing-PCM failure. Do not launch outside the normal menu flow, which releases the sound device before starting the game.
+
+To update an existing installation, replace `Viviette.sh` and add `viviette/asound-viviette.conf`. Keep your existing `game.port` and saves; the audio fix does not alter game data or the font patch.
+
 ## Troubleshooting and verification limits
 
 - Launch log: `viviette/log.txt`, recreated on every launch.
 - `control.txt` / platform-helper errors: first check PortMaster installation and normal menu-based launching.
 - Shared-library / GLIBC errors: check the AArch64 architecture and firmware libraries. This binary does not support ARMv7 or x86.
 - Corrupted text: check that the prepared `game.port` with the patched ARM64 runner is being used.
-- Audio is not claimed to be fixed by this port: the observed TSPS log contained the ALSA error `Unknown PCM Playback`. The font patch does not change audio; verify the target device's ALSA route separately.
+- Silent audio: check that both the updated launcher and `asound-viviette.conf` are installed. On the matching TSPS card, the log should contain `[Viviette] ALSA output: port-local audiocodec playback`, without `Unknown PCM Playback`. For other devices or Bluetooth, verify their ALSA route separately.
 - Compatibility, performance, and save/load behavior on another device must be tested separately.
 
 ## Verify scaffold files
